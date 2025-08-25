@@ -1,0 +1,794 @@
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tugas XI TJKT - Login & Register</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+  />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-600 min-h-screen flex flex-col">
+  <div id="app" class="flex-grow flex flex-col max-w-5xl mx-auto w-full px-4 py-10">
+    <!-- Authentication Screen -->
+    <section v-if="!isLoggedIn" class="max-w-md w-full mx-auto bg-white rounded-3xl shadow-2xl p-10">
+      <h1 class="text-4xl font-extrabold mb-8 text-center text-indigo-700 tracking-wide">Tugas XI TJKT</h1>
+
+      <div class="flex justify-center mb-8 space-x-8">
+        <button
+          @click="authMode = 'login'"
+          :class="authMode === 'login' ? 'border-b-4 border-indigo-600 text-indigo-700 font-semibold' : 'text-gray-400 hover:text-indigo-600'"
+          class="text-lg pb-2 transition"
+          aria-label="Switch to Login"
+        >
+          Login
+        </button>
+        <button
+          @click="authMode = 'register'"
+          :class="authMode === 'register' ? 'border-b-4 border-indigo-600 text-indigo-700 font-semibold' : 'text-gray-400 hover:text-indigo-600'"
+          class="text-lg pb-2 transition"
+          aria-label="Switch to Register"
+        >
+          Daftar
+        </button>
+      </div>
+
+      <!-- Login Form -->
+      <form v-if="authMode === 'login'" @submit.prevent="login" class="space-y-6" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" novalidate>
+        <div>
+          <label for="loginUsername" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+          <input
+            id="loginUsername"
+            v-model="loginForm.username"
+            type="text"
+            required
+            autocomplete="username"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+            placeholder="Masukkan username"
+            spellcheck="false"
+            autocorrect="off"
+            autocapitalize="none"
+          />
+        </div>
+        <div>
+          <label for="loginPassword" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+          <input
+            id="loginPassword"
+            v-model="loginForm.password"
+            type="password"
+            required
+            autocomplete="current-password"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+            placeholder="Masukkan password"
+            spellcheck="false"
+            autocorrect="off"
+            autocapitalize="none"
+          />
+        </div>
+        <button
+          type="submit"
+          class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow-lg transition flex items-center justify-center space-x-2"
+          aria-label="Login"
+          :disabled="loading"
+        >
+          <span v-if="!loading">Login</span>
+          <span v-else><i class="fas fa-hourglass-half"></i><span class="ml-2">Sedang memproses...</span></span>
+        </button>
+        <p v-if="loginError" class="text-red-600 mt-3 text-center font-medium select-none" role="alert">{{ loginError }}</p>
+      </form>
+
+      <!-- Register Form -->
+      <form v-if="authMode === 'register'" @submit.prevent="register" class="space-y-6" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" novalidate>
+        <div>
+          <label for="registerUsername" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+          <input
+            id="registerUsername"
+            v-model="registerForm.username"
+            type="text"
+            required
+            minlength="3"
+            maxlength="30"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+            placeholder="Masukkan username"
+            spellcheck="false"
+            autocorrect="off"
+            autocapitalize="none"
+          />
+        </div>
+        <div>
+          <label for="registerPassword" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+          <input
+            id="registerPassword"
+            v-model="registerForm.password"
+            type="password"
+            required
+            minlength="6"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+            placeholder="Masukkan password"
+            spellcheck="false"
+            autocorrect="off"
+            autocapitalize="none"
+          />
+        </div>
+        <p class="text-sm text-gray-600 italic select-none">* Semua pendaftar akan menjadi <strong>Member</strong> secara default.</p>
+        <button
+          type="submit"
+          class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow-lg transition flex items-center justify-center space-x-2"
+          aria-label="Register"
+          :disabled="loading"
+        >
+          <span v-if="!loading">Daftar</span>
+          <span v-else><i class="fas fa-hourglass-half"></i><span class="ml-2">Sedang memproses...</span></span>
+        </button>
+        <p v-if="registerError" class="text-red-600 mt-3 text-center font-medium select-none" role="alert">{{ registerError }}</p>
+        <p v-if="registerSuccess" class="text-green-600 mt-3 text-center font-medium select-none" role="alert">{{ registerSuccess }}</p>
+      </form>
+    </section>
+
+    <!-- Main App -->
+    <section v-else class="flex flex-col flex-grow bg-white rounded-3xl shadow-2xl p-8 max-w-7xl mx-auto">
+      <header class="flex flex-col md:flex-row items-center justify-between border-b border-gray-300 pb-4 mb-6">
+        <h1 class="text-3xl font-extrabold text-indigo-700 tracking-wide mb-4 md:mb-0">Tugas XI TJKT</h1>
+        <div class="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-6">
+          <p class="text-gray-700 font-semibold text-lg select-none">
+            Halo, <span class="capitalize">{{ currentUser.username }}</span>
+            <span v-if="isAdmin" class="text-green-600 font-bold ml-2">(Admin)</span>
+            <span v-else class="text-gray-500 ml-2">(Member)</span>
+          </p>
+          <button
+            @click="logout"
+            class="text-red-600 hover:text-red-800 focus:outline-none transition"
+            title="Logout"
+            aria-label="Logout"
+          >
+            <i class="fas fa-sign-out-alt fa-lg"></i>
+          </button>
+        </div>
+      </header>
+
+      <main class="flex-grow overflow-auto">
+        <div class="flex flex-col md:flex-row md:space-x-8">
+          <section class="md:w-2/3 bg-indigo-50 rounded-2xl shadow-inner p-6 mb-6 md:mb-0 max-h-[75vh] overflow-y-auto">
+            <h2 class="text-2xl font-bold mb-6 text-indigo-700 border-b border-indigo-300 pb-2">Daftar Tugas</h2>
+            <ul class="space-y-5">
+              <li
+                v-for="(task, index) in tasks"
+                :key="task._id || task.id"
+                class="border border-indigo-300 rounded-xl p-5 hover:shadow-lg transition cursor-pointer bg-white"
+                @click="selectTask(index)"
+                :class="selectedTaskIndex === index ? 'ring-4 ring-indigo-400' : ''"
+                tabindex="0"
+                @keydown.enter="selectTask(index)"
+                role="button"
+                :aria-pressed="selectedTaskIndex === index"
+              >
+                <h3 class="font-semibold text-indigo-700 text-xl truncate">{{ task.title }}</h3>
+                <p class="text-gray-700 text-sm mt-1 line-clamp-3">{{ task.description }}</p>
+                <div class="flex flex-wrap text-xs text-gray-500 mt-2 space-x-4">
+                  <p>Dibuat oleh: <span class="capitalize font-medium">{{ task.createdBy }}</span></p>
+                  <p>Tanggal dibuat: {{ task.date }}</p>
+                  <p>Deadline: {{ task.deadline }}</p>
+                </div>
+                <p v-if="task.fileName" class="text-indigo-600 text-xs mt-2 truncate" :title="'File tugas: ' + task.fileName">
+                  <i class="fas fa-file-alt mr-1"></i> {{ task.fileName }}
+                </p>
+              </li>
+              <li v-if="tasks.length === 0" class="text-gray-500 text-center py-20 select-none">Belum ada tugas yang tersimpan.</li>
+            </ul>
+          </section>
+
+          <section class="md:w-1/3 bg-white rounded-2xl shadow-lg p-6 max-h-[75vh] overflow-y-auto">
+            <div v-if="selectedTaskIndex !== null" class="space-y-5">
+              <h2 class="text-2xl font-bold text-indigo-700 border-b border-indigo-300 pb-2">Detail Tugas</h2>
+              <h3 class="font-semibold text-xl capitalize text-gray-800">{{ tasks[selectedTaskIndex].title }}</h3>
+              <p class="text-gray-700 whitespace-pre-line leading-relaxed">{{ tasks[selectedTaskIndex].description }}</p>
+              <div class="text-gray-500 text-sm mt-3 space-y-1">
+                <p>Dibuat oleh: <span class="capitalize font-medium">{{ tasks[selectedTaskIndex].createdBy }}</span></p>
+                <p>Tanggal dibuat: {{ tasks[selectedTaskIndex].date }}</p>
+                <p>Deadline: {{ tasks[selectedTaskIndex].deadline }}</p>
+              </div>
+              <div v-if="tasks[selectedTaskIndex].fileName" class="mt-4">
+                <p class="text-indigo-600 text-sm font-semibold mb-2">File Tugas:</p>
+                <a
+                  :href="tasks[selectedTaskIndex].fileData"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center text-indigo-600 hover:underline font-medium"
+                  :download="tasks[selectedTaskIndex].fileName"
+                >
+                  <i class="fas fa-file-download mr-2"></i> {{ tasks[selectedTaskIndex].fileName }}
+                </a>
+              </div>
+              <button
+                v-if="isAdmin"
+                @click="deleteTask(selectedTaskIndex)"
+                class="mt-6 w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-xl shadow-md transition"
+                aria-label="Hapus tugas"
+              >
+                Hapus Tugas
+              </button>
+              <div v-if="isAdmin" class="mt-6">
+                <label for="extendDeadline" class="block text-sm font-medium text-gray-700 mb-2">Perpanjang Deadline</label>
+                <input
+                  id="extendDeadline"
+                  type="date"
+                  v-model="extendDeadlineDate"
+                  :min="minExtendDate"
+                  class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                />
+                <button
+                  @click="extendDeadline"
+                  :disabled="!extendDeadlineDate"
+                  class="mt-3 w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-3 rounded-xl shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Perpanjang deadline tugas"
+                >
+                  Perpanjang Deadline
+                </button>
+              </div>
+            </div>
+            <div v-else class="text-gray-400 text-center py-20 select-none">Pilih tugas untuk melihat detail.</div>
+          </section>
+        </div>
+
+        <section v-if="isAdmin" class="mt-10 bg-indigo-50 rounded-2xl shadow-inner p-8 max-w-4xl mx-auto">
+          <h2 class="text-2xl font-bold mb-6 text-indigo-700 border-b border-indigo-300 pb-3">Tambah Tugas Baru</h2>
+          <form @submit.prevent="addTask" class="space-y-6" enctype="multipart/form-data" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" novalidate>
+            <div>
+              <label for="title" class="block text-sm font-medium text-gray-700 mb-2">Judul Tugas</label>
+              <input
+                id="title"
+                v-model="newTask.title"
+                type="text"
+                required
+                class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                placeholder="Masukkan judul tugas"
+                spellcheck="false"
+                autocorrect="off"
+                autocapitalize="none"
+              />
+            </div>
+            <div>
+              <label for="description" class="block text-sm font-medium text-gray-700 mb-2">Deskripsi Tugas</label>
+              <textarea
+                id="description"
+                v-model="newTask.description"
+                rows="5"
+                required
+                class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none transition"
+                placeholder="Masukkan deskripsi tugas"
+                spellcheck="false"
+                autocorrect="off"
+                autocapitalize="none"
+              ></textarea>
+            </div>
+            <div>
+              <label for="deadline" class="block text-sm font-medium text-gray-700 mb-2">Tanggal Deadline</label>
+              <input
+                id="deadline"
+                v-model="newTask.deadline"
+                type="date"
+                required
+                class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+              />
+            </div>
+            <div>
+              <label for="file" class="block text-sm font-medium text-gray-700 mb-2">File Tugas (opsional)</label>
+              <input
+                id="file"
+                type="file"
+                @change="handleFileUpload"
+                accept=".pdf,.doc,.docx,.txt,.zip,.rar,.7z,.jpg,.jpeg,.png"
+                class="w-full text-gray-700 rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+              />
+            </div>
+            <button
+              type="submit"
+              class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl w-full shadow-lg transition"
+              aria-label="Simpan Tugas"
+            >
+              Simpan Tugas
+            </button>
+          </form>
+        </section>
+
+        <section v-if="isAdmin" class="mt-10 bg-indigo-50 rounded-2xl shadow-inner p-8 max-w-4xl mx-auto">
+          <h2 class="text-2xl font-bold mb-6 text-indigo-700 border-b border-indigo-300 pb-3">Pengangkatan Member Menjadi Admin</h2>
+          <form @submit.prevent="promoteMember" class="space-y-6" novalidate>
+            <div>
+              <label for="memberSelect" class="block text-sm font-medium text-gray-700 mb-2">Pilih Member</label>
+              <select
+                id="memberSelect"
+                v-model="selectedMemberToPromote"
+                required
+                class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+              >
+                <option disabled value="">-- Pilih Member --</option>
+                <option
+                  v-for="member in membersNotAdmin"
+                  :key="member.username"
+                  :value="member.username"
+                  class="capitalize"
+                >
+                  {{ member.username }}
+                </option>
+              </select>
+            </div>
+            <button
+              type="submit"
+              class="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-xl w-full shadow-lg transition"
+              aria-label="Angkat Menjadi Admin"
+            >
+              Angkat Menjadi Admin
+            </button>
+          </form>
+        </section>
+      </main>
+    </section>
+  </div>
+
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script>
+    const { createApp, reactive, ref, computed, watch } = Vue;
+
+    createApp({
+      setup() {
+        // Users data with full list including admin and members
+        const users = reactive([
+          { username: 'Vindi Aldiano. M', password: 'Admin1TJKT', role: 'admin' },
+          { username: 'ananda', password: 'MemberTKJ', role: 'member' },
+          { username: 'anca', password: 'MemberTKJ', role: 'member' },
+          { username: 'anggit', password: 'MemberTKJ', role: 'member' },
+          { username: 'aisyah', password: 'MemberTKJ', role: 'member' },
+          { username: 'arya', password: 'MemberTKJ', role: 'member' },
+          { username: 'divta', password: 'MemberTKJ', role: 'member' },
+          { username: 'gita', password: 'MemberTKJ', role: 'member' },
+          { username: 'khawra', password: 'MemberTKJ', role: 'member' },
+          { username: 'hesti', password: 'MemberTKJ', role: 'member' },
+          { username: 'ismail', password: 'MemberTKJ', role: 'member' },
+          { username: 'nadya', password: 'MemberTKJ', role: 'member' },
+          { username: 'hasnita', password: 'MemberTKJ', role: 'member' },
+          { username: 'friti', password: 'MemberTKJ', role: 'member' },
+          { username: 'ramdan', password: 'MemberTKJ', role: 'member' },
+          { username: 'rani', password: 'MemberTKJ', role: 'member' },
+          { username: 'raya', password: 'MemberTKJ', role: 'member' },
+          { username: 'syuhfi', password: 'MemberTKJ', role: 'member' },
+          { username: 'zahraitun', password: 'MemberTKJ', role: 'member' },
+          { username: 'sari', password: 'MemberTKJ', role: 'member' },
+          { username: 'siska', password: 'MemberTKJ', role: 'member' },
+          { username: 'andita', password: 'MemberTKJ', role: 'member' },
+          { username: 'kharina', password: 'MemberTKJ', role: 'member' },
+          { username: 'salzabila', password: 'MemberTKJ', role: 'member' },
+          { username: 'rajib', password: 'MemberTKJ', role: 'member' },
+          { username: 'rezki', password: 'MemberTKJ', role: 'member' },
+        ]);
+
+        const authMode = ref('login'); // 'login' or 'register'
+        const loading = ref(false);
+
+        const loginForm = reactive({
+          username: '',
+          password: '',
+        });
+
+        const registerForm = reactive({
+          username: '',
+          password: '',
+        });
+
+        const loginError = ref('');
+        const registerError = ref('');
+        const registerSuccess = ref('');
+        const isLoggedIn = ref(false);
+        const currentUser = reactive({ username: '', role: '' });
+
+        const tasks = reactive([]);
+        const selectedTaskIndex = ref(null);
+
+        const newTask = reactive({
+          title: '',
+          description: '',
+          deadline: '',
+          fileName: '',
+          fileData: '',
+        });
+
+        const selectedMemberToPromote = ref('');
+        const extendDeadlineDate = ref('');
+        const usersList = reactive([...users]); // Initialize usersList with users
+
+        const isAdmin = computed(() => currentUser.role === 'admin');
+
+        const membersNotAdmin = computed(() =>
+          usersList.filter((u) => u.role === 'member')
+        );
+
+        const minExtendDate = computed(() => {
+          if (selectedTaskIndex.value === null) return new Date().toISOString().split('T')[0];
+          const currentDeadlineStr = tasks[selectedTaskIndex.value].deadline;
+          if (/^\d{4}-\d{2}-\d{2}$/.test(currentDeadlineStr)) {
+            const date = new Date(currentDeadlineStr);
+            date.setDate(date.getDate() + 1);
+            const isoDate = date.toISOString().split('T')[0];
+            const today = new Date().toISOString().split('T')[0];
+            return isoDate > today ? isoDate : today;
+          }
+          const parts = currentDeadlineStr.split(' ');
+          if (parts.length !== 3) return new Date().toISOString().split('T')[0];
+          const monthNames = {
+            Januari: 0, Februari: 1, Maret: 2, April: 3, Mei: 4, Juni: 5,
+            Juli: 6, Agustus: 7, September: 8, Oktober: 9, November: 10, Desember: 11
+          };
+          const day = parseInt(parts[0], 10);
+          const month = monthNames[parts[1]];
+          const year = parseInt(parts[2], 10);
+          if (isNaN(day) || isNaN(month) || isNaN(year)) return new Date().toISOString().split('T')[0];
+          const currentDeadlineDate = new Date(year, month, day);
+          currentDeadlineDate.setDate(currentDeadlineDate.getDate() + 1);
+          const isoDate = currentDeadlineDate.toISOString().split('T')[0];
+          const today = new Date().toISOString().split('T')[0];
+          return isoDate > today ? isoDate : today;
+        });
+
+        watch(selectedTaskIndex, () => {
+          extendDeadlineDate.value = '';
+        });
+
+        // IMPORTANT: Replace this with your actual backend API URL
+        const API_BASE_URL = 'https://api.tugas-xi-tjkt.example.com';
+
+        async function login() {
+          loginError.value = '';
+          registerError.value = '';
+          registerSuccess.value = '';
+          loading.value = true;
+          const usernameInput = loginForm.username.trim();
+          const passwordInput = loginForm.password;
+
+          // Local authentication fallback if API is unreachable
+          const localUser = users.find(u => u.username.toLowerCase() === usernameInput.toLowerCase() && u.password === passwordInput);
+          if (localUser) {
+            currentUser.username = localUser.username;
+            currentUser.role = localUser.role;
+            isLoggedIn.value = true;
+            loginForm.username = '';
+            loginForm.password = '';
+            loading.value = false;
+            selectedTaskIndex.value = null;
+            tasks.splice(0, tasks.length); // Clear tasks (no backend)
+            usersList.splice(0, usersList.length, ...users);
+            return;
+          }
+
+          try {
+            const res = await fetch(`${API_BASE_URL}/auth/login`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ username: usernameInput, password: passwordInput }),
+              credentials: 'include',
+            });
+            if (!res.ok) {
+              const err = await res.json();
+              loginError.value = err.message || 'Username atau password salah.';
+              loading.value = false;
+              return;
+            }
+            const data = await res.json();
+            currentUser.username = data.user.username;
+            currentUser.role = data.user.role;
+            isLoggedIn.value = true;
+            loginForm.username = '';
+            loginForm.password = '';
+            await fetchTasks();
+            if (isAdmin.value) {
+              await fetchUsers();
+            }
+            selectedTaskIndex.value = null;
+          } catch (error) {
+            console.error('Error during login:', error);
+            loginError.value = 'Gagal terhubung ke server dan user tidak ditemukan secara lokal.';
+          } finally {
+            loading.value = false;
+          }
+        }
+
+        async function register() {
+          registerError.value = '';
+          loginError.value = '';
+          registerSuccess.value = '';
+          loading.value = true;
+          if (!registerForm.username.trim() || !registerForm.password) {
+            registerError.value = 'Semua field harus diisi.';
+            loading.value = false;
+            return;
+          }
+          if (registerForm.password.length < 6) {
+            registerError.value = 'Password minimal 6 karakter.';
+            loading.value = false;
+            return;
+          }
+          // Check if username already exists locally
+          if (users.find(u => u.username.toLowerCase() === registerForm.username.trim().toLowerCase())) {
+            registerError.value = 'Username sudah digunakan.';
+            loading.value = false;
+            return;
+          }
+          try {
+            const res = await fetch(`${API_BASE_URL}/auth/register`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                username: registerForm.username.trim(),
+                password: registerForm.password,
+                role: 'member',
+              }),
+            });
+            if (!res.ok) {
+              const err = await res.json();
+              registerError.value = err.message || 'Gagal mendaftar.';
+              loading.value = false;
+              return;
+            }
+            registerSuccess.value = 'Pendaftaran berhasil! Silakan login.';
+            registerForm.username = '';
+            registerForm.password = '';
+            authMode.value = 'login';
+          } catch (error) {
+            registerError.value = 'Gagal terhubung ke server.';
+          } finally {
+            loading.value = false;
+          }
+        }
+
+        async function logout() {
+          try {
+            await fetch(`${API_BASE_URL}/auth/logout`, {
+              method: 'POST',
+              credentials: 'include',
+            });
+          } catch {}
+          isLoggedIn.value = false;
+          currentUser.username = '';
+          currentUser.role = '';
+          selectedTaskIndex.value = null;
+          loginError.value = '';
+          registerError.value = '';
+          registerSuccess.value = '';
+          newTask.title = '';
+          newTask.description = '';
+          newTask.deadline = '';
+          newTask.fileName = '';
+          newTask.fileData = '';
+          selectedMemberToPromote.value = '';
+          extendDeadlineDate.value = '';
+          tasks.splice(0, tasks.length);
+          usersList.splice(0, usersList.length, ...users);
+        }
+
+        async function fetchTasks() {
+          try {
+            const res = await fetch(`${API_BASE_URL}/tasks`, {
+              credentials: 'include',
+            });
+            if (!res.ok) throw new Error('Failed to fetch tasks');
+            const data = await res.json();
+            tasks.splice(0, tasks.length, ...data.tasks);
+          } catch (error) {
+            alert('Gagal memuat daftar tugas.');
+          }
+        }
+
+        async function fetchUsers() {
+          try {
+            const res = await fetch(`${API_BASE_URL}/users`, {
+              credentials: 'include',
+            });
+            if (!res.ok) throw new Error('Failed to fetch users');
+            const data = await res.json();
+            usersList.splice(0, usersList.length, ...data.users);
+          } catch (error) {
+            alert('Gagal memuat daftar pengguna.');
+          }
+        }
+
+        async function addTask() {
+          if (!newTask.title.trim() || !newTask.description.trim() || !newTask.deadline) return;
+
+          try {
+            const formData = new FormData();
+            formData.append('title', newTask.title.trim());
+            formData.append('description', newTask.description.trim());
+            formData.append('deadline', newTask.deadline);
+            if (newTask.fileData && newTask.fileName) {
+              const res = await fetch(newTask.fileData);
+              const blob = await res.blob();
+              formData.append('file', blob, newTask.fileName);
+            }
+
+            const res = await fetch(`${API_BASE_URL}/tasks`, {
+              method: 'POST',
+              credentials: 'include',
+              body: formData,
+            });
+            if (!res.ok) {
+              const err = await res.json();
+              alert(err.message || 'Gagal menambahkan tugas.');
+              return;
+            }
+            const addedTask = await res.json();
+            tasks.push(addedTask.task);
+            newTask.title = '';
+            newTask.description = '';
+            newTask.deadline = '';
+            newTask.fileName = '';
+            newTask.fileData = '';
+            selectedTaskIndex.value = tasks.length - 1;
+            const fileInput = document.getElementById('file');
+            if (fileInput) fileInput.value = '';
+          } catch (error) {
+            alert('Gagal menambahkan tugas.');
+          }
+        }
+
+        async function deleteTask(index) {
+          if (index === null || index < 0 || index >= tasks.length) return;
+          const taskId = tasks[index]._id || tasks[index].id;
+          try {
+            const res = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
+              method: 'DELETE',
+              credentials: 'include',
+            });
+            if (!res.ok) {
+              const err = await res.json();
+              alert(err.message || 'Gagal menghapus tugas.');
+              return;
+            }
+            tasks.splice(index, 1);
+            selectedTaskIndex.value = null;
+            extendDeadlineDate.value = '';
+          } catch (error) {
+            alert('Gagal menghapus tugas.');
+          }
+        }
+
+        function selectTask(index) {
+          selectedTaskIndex.value = index;
+          extendDeadlineDate.value = '';
+        }
+
+        async function promoteMember() {
+          if (!isAdmin.value) {
+            alert('Hanya admin yang dapat mengangkat member menjadi admin.');
+            return;
+          }
+          if (!selectedMemberToPromote.value) return;
+          try {
+            const res = await fetch(`${API_BASE_URL}/users/promote`, {
+              method: 'POST',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ username: selectedMemberToPromote.value }),
+            });
+            if (!res.ok) {
+              const err = await res.json();
+              alert(err.message || 'Gagal mengangkat member menjadi admin.');
+              return;
+            }
+            const updatedUser = await res.json();
+            const idx = usersList.findIndex(u => u.username === updatedUser.user.username);
+            if (idx !== -1) {
+              usersList[idx].role = updatedUser.user.role;
+            }
+            selectedMemberToPromote.value = '';
+            alert(`Member "${updatedUser.user.username}" telah diangkat menjadi Admin.`);
+          } catch (error) {
+            alert('Gagal mengangkat member menjadi admin.');
+          }
+        }
+
+        async function extendDeadline() {
+          if (selectedTaskIndex.value === null) return;
+          if (!extendDeadlineDate.value) return;
+
+          try {
+            const taskId = tasks[selectedTaskIndex.value]._id || tasks[selectedTaskIndex.value].id;
+            const res = await fetch(`${API_BASE_URL}/tasks/${taskId}/extend`, {
+              method: 'POST',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ newDeadline: extendDeadlineDate.value }),
+            });
+            if (!res.ok) {
+              const err = await res.json();
+              alert(err.message || 'Gagal memperpanjang deadline.');
+              return;
+            }
+            const updatedTask = await res.json();
+            tasks[selectedTaskIndex.value].deadline = updatedTask.task.deadline;
+            alert('Deadline berhasil diperpanjang.');
+            extendDeadlineDate.value = '';
+          } catch (error) {
+            alert('Gagal memperpanjang deadline.');
+          }
+        }
+
+        function handleFileUpload(event) {
+          const file = event.target.files[0];
+          if (!file) {
+            newTask.fileName = '';
+            newTask.fileData = '';
+            return;
+          }
+          newTask.fileName = file.name;
+
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            newTask.fileData = e.target.result;
+          };
+          reader.readAsDataURL(file);
+        }
+
+        async function checkSession() {
+          try {
+            const res = await fetch(`${API_BASE_URL}/auth/session`, {
+              credentials: 'include',
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+            if (data.user) {
+              currentUser.username = data.user.username;
+              currentUser.role = data.user.role;
+              isLoggedIn.value = true;
+              await fetchTasks();
+              if (isAdmin.value) {
+                await fetchUsers();
+              }
+            }
+          } catch {}
+        }
+
+        checkSession();
+
+        return {
+          users,
+          authMode,
+          loading,
+          loginForm,
+          registerForm,
+          loginError,
+          registerError,
+          registerSuccess,
+          isLoggedIn,
+          currentUser,
+          tasks,
+          selectedTaskIndex,
+          newTask,
+          isAdmin,
+          membersNotAdmin,
+          selectedMemberToPromote,
+          extendDeadlineDate,
+          minExtendDate,
+          login,
+          register,
+          logout,
+          addTask,
+          deleteTask,
+          selectTask,
+          promoteMember,
+          handleFileUpload,
+          extendDeadline,
+        };
+      },
+    }).mount('#app');
+  </script>
+</body>
+</html>
