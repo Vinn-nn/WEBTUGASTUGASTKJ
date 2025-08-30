@@ -2,16 +2,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Tugas XI TJKT</title>
+  <title>Task Management App</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link
-    rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
-  />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"
-    rel="stylesheet"
-  />
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet" />
   <style>
     body {
       font-family: 'Inter', sans-serif;
@@ -19,278 +15,142 @@
   </style>
 </head>
 <body class="bg-gray-50 min-h-screen flex flex-col">
-  <div id="app" class="flex-grow flex flex-col max-w-5xl mx-auto w-full px-4 py-6">
-    <!-- Login Screen -->
-    <section v-if="!isLoggedIn" class="max-w-md w-full mx-auto bg-white rounded-lg shadow-md p-8">
-      <h1 class="text-3xl font-semibold mb-6 text-center text-indigo-700">Tugas XI TJKT</h1>
-      <form @submit.prevent="login" class="space-y-6" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
-        <div>
-          <label for="username" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
-          <input
-            id="username"
-            v-model="loginForm.username"
-            type="text"
-            required
-            autocomplete="username"
-            class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            placeholder="Masukkan username"
-            spellcheck="false"
-            autocorrect="off"
-            autocapitalize="none"
-          />
-        </div>
-        <div>
-          <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-          <input
-            id="password"
-            v-model="loginForm.password"
-            type="password"
-            required
-            autocomplete="current-password"
-            class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            placeholder="Masukkan password"
-            spellcheck="false"
-            autocorrect="off"
-            autocapitalize="none"
-          />
-        </div>
-        <button
-          type="submit"
-          class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 rounded-md transition"
-        >
-          Login
+  <div id="app" class="flex-grow flex flex-col max-w-7xl mx-auto p-4 sm:p-6 md:p-8">
+    <!-- Header -->
+    <header class="flex items-center justify-between mb-6">
+      <h1 class="text-3xl font-bold text-indigo-700">Task Management</h1>
+      <div v-if="isLoggedIn" class="flex items-center space-x-4">
+        <p class="text-gray-700 font-medium">Hello, <span class="text-indigo-600">{{ currentUser.username }}</span> <span v-if="isAdmin" class="text-sm text-green-600 font-semibold">(Admin)</span></p>
+        <button @click="logout" class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-md text-sm flex items-center gap-2">
+          <i class="fas fa-sign-out-alt"></i> Logout
         </button>
-        <p v-if="loginError" class="text-red-600 mt-2 text-center font-medium">{{ loginError }}</p>
+      </div>
+    </header>
+
+    <!-- Login Form -->
+    <section v-if="!isLoggedIn" class="max-w-md w-full mx-auto bg-white p-6 rounded-lg shadow-md">
+      <h2 class="text-2xl font-semibold mb-4 text-center text-indigo-700">Login</h2>
+      <form @submit.prevent="login" class="space-y-4">
+        <div>
+          <label for="username" class="block text-gray-700 font-medium mb-1">Username</label>
+          <input id="username" v-model="loginForm.username" type="text" autocomplete="username" required
+            class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+        <div>
+          <label for="password" class="block text-gray-700 font-medium mb-1">Password</label>
+          <input id="password" v-model="loginForm.password" type="password" autocomplete="current-password" required
+            class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+        <p v-if="loginError" class="text-red-600 text-sm font-semibold">{{ loginError }}</p>
+        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 rounded-md flex justify-center items-center gap-2">
+          <i class="fas fa-sign-in-alt"></i> Login
+        </button>
       </form>
     </section>
 
-    <!-- Main App -->
-    <section v-else class="flex flex-col flex-grow">
-      <header class="flex items-center justify-between border-b border-gray-300 pb-3 mb-4">
-        <h1 class="text-2xl font-semibold text-indigo-700">Tugas XI TJKT</h1>
-        <div class="flex items-center space-x-4">
-          <p class="text-gray-700 font-medium">Halo, <span class="capitalize">{{ currentUser.username }}</span> <span v-if="isAdmin" class="text-sm text-green-600 font-semibold">(Admin)</span><span v-else class="text-sm text-gray-500">(Member)</span></p>
-          <button
-            @click="logout"
-            class="text-red-600 hover:text-red-800 focus:outline-none"
-            title="Logout"
-            aria-label="Logout"
-          >
-            <i class="fas fa-sign-out-alt fa-lg"></i>
-          </button>
-        </div>
-      </header>
+    <!-- Main App Content -->
+    <section v-if="isLoggedIn" class="flex flex-col md:flex-row gap-6 flex-grow">
+      <!-- Task List -->
+      <div class="md:w-1/3 bg-white rounded-lg shadow-md p-4 flex flex-col">
+        <h2 class="text-xl font-semibold mb-4 text-indigo-700 flex items-center gap-2">
+          <i class="fas fa-tasks"></i> Tasks
+        </h2>
+        <ul class="flex-grow overflow-y-auto divide-y divide-gray-200">
+          <li v-for="(task, index) in tasks" :key="task.id" @click="selectTask(index)"
+            :class="['cursor-pointer p-3 rounded-md', selectedTaskIndex === index ? 'bg-indigo-100' : 'hover:bg-indigo-50']">
+            <h3 class="font-semibold text-gray-800 truncate">{{ task.title }}</h3>
+            <p class="text-sm text-gray-600 truncate">{{ task.description }}</p>
+            <p class="text-xs text-gray-500 mt-1">Deadline: {{ task.deadline }}</p>
+          </li>
+          <li v-if="tasks.length === 0" class="text-center text-gray-500 py-6">No tasks available.</li>
+        </ul>
+      </div>
 
-      <main class="flex-grow overflow-auto">
-        <div class="flex flex-col md:flex-row md:space-x-6">
-          <section class="md:w-2/3 bg-white rounded-lg shadow-md p-6 mb-6 md:mb-0 max-h-[70vh] overflow-y-auto">
-            <h2 class="text-xl font-semibold mb-4 text-indigo-700">Daftar Tugas</h2>
-            <ul class="space-y-4">
-              <li
-                v-for="(task, index) in tasks"
-                :key="task.id"
-                class="border border-gray-300 rounded-md p-4 hover:shadow-md transition cursor-pointer"
-                @click="selectTask(index)"
-                :class="selectedTaskIndex === index ? 'bg-indigo-50 border-indigo-500' : ''"
-                tabindex="0"
-                @keydown.enter="selectTask(index)"
-                role="button"
-                :aria-pressed="selectedTaskIndex === index"
-              >
-                <h3 class="font-semibold text-indigo-700 text-lg">{{ task.title }}</h3>
-                <p class="text-gray-600 text-sm mt-1 line-clamp-2">{{ task.description }}</p>
-                <p class="text-gray-500 text-xs mt-1">Dibuat oleh: <span class="capitalize">{{ task.createdBy }}</span></p>
-                <p class="text-gray-400 text-xs mt-0.5">Tanggal dibuat: {{ task.date }}</p>
-                <p class="text-gray-400 text-xs mt-0.5">Deadline: {{ task.deadline }}</p>
-                <p v-if="task.fileName" class="text-indigo-600 text-xs mt-1 truncate" title="File tugas: {{ task.fileName }}">
-                  <i class="fas fa-file-alt mr-1"></i> {{ task.fileName }}
-                </p>
-              </li>
-              <li v-if="tasks.length === 0" class="text-gray-500 text-center py-10">Belum ada tugas yang tersimpan.</li>
-            </ul>
-          </section>
+      <!-- Task Details and Actions -->
+      <div class="md:w-2/3 bg-white rounded-lg shadow-md p-6 flex flex-col">
+        <div v-if="selectedTaskIndex !== null" class="flex flex-col flex-grow">
+          <h2 class="text-2xl font-bold text-indigo-700 mb-3">{{ tasks[selectedTaskIndex].title }}</h2>
+          <p class="text-gray-700 mb-4 whitespace-pre-line">{{ tasks[selectedTaskIndex].description }}</p>
+          <p class="text-sm text-gray-600 mb-2">Created by: <span class="font-medium">{{ tasks[selectedTaskIndex].created_by }}</span></p>
+          <p class="text-sm text-gray-600 mb-2">Created on: <span class="font-medium">{{ tasks[selectedTaskIndex].date }}</span></p>
+          <p class="text-sm text-gray-600 mb-4">Deadline: <span class="font-medium">{{ tasks[selectedTaskIndex].deadline }}</span></p>
 
-          <section class="md:w-1/3 bg-white rounded-lg shadow-md p-6 max-h-[70vh] overflow-y-auto">
-            <div v-if="selectedTaskIndex !== null" class="space-y-4">
-              <h2 class="text-xl font-semibold text-indigo-700">Detail Tugas</h2>
-              <h3 class="font-semibold text-lg capitalize">{{ tasks[selectedTaskIndex].title }}</h3>
-              <p class="text-gray-700 whitespace-pre-line">{{ tasks[selectedTaskIndex].description }}</p>
-              <p class="text-gray-500 text-sm mt-2">Dibuat oleh: <span class="capitalize">{{ tasks[selectedTaskIndex].createdBy }}</span></p>
-              <p class="text-gray-400 text-xs">Tanggal dibuat: {{ tasks[selectedTaskIndex].date }}</p>
-              <p class="text-gray-400 text-xs">Deadline: {{ tasks[selectedTaskIndex].deadline }}</p>
-              <div v-if="tasks[selectedTaskIndex].fileName" class="mt-2">
-                <p class="text-indigo-600 text-sm font-semibold mb-1">File Tugas:</p>
-                <a
-                  :href="tasks[selectedTaskIndex].fileData"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="inline-flex items-center text-indigo-600 hover:underline"
-                  :download="tasks[selectedTaskIndex].fileName"
-                >
-                  <i class="fas fa-file-download mr-2"></i> {{ tasks[selectedTaskIndex].fileName }}
-                </a>
-              </div>
-              <button
-                v-if="isAdmin"
-                @click="deleteTask(selectedTaskIndex)"
-                class="mt-4 w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 rounded-md transition"
-                aria-label="Hapus tugas"
-              >
-                Hapus Tugas
+          <div v-if="tasks[selectedTaskIndex].file_name" class="mb-4">
+            <p class="font-semibold text-gray-800 mb-1">Attached File:</p>
+            <a :href="tasks[selectedTaskIndex].file_data" :download="tasks[selectedTaskIndex].file_name" target="_blank" rel="noopener noreferrer"
+              class="inline-flex items-center gap-2 text-indigo-600 hover:underline">
+              <i class="fas fa-file-download"></i> {{ tasks[selectedTaskIndex].file_name }}
+            </a>
+          </div>
+
+          <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-4 gap-3 mt-auto">
+            <button @click="deleteTask(selectedTaskIndex)" type="button"
+              class="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md font-semibold">
+              <i class="fas fa-trash-alt"></i> Delete Task
+            </button>
+
+            <div class="flex items-center space-x-2">
+              <input type="date" v-model="extendDeadlineDate" class="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              <button @click="extendDeadline" type="button"
+                class="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                :disabled="!extendDeadlineDate">
+                <i class="fas fa-calendar-plus"></i> Extend Deadline
               </button>
-              <div v-if="isAdmin" class="mt-4">
-                <label for="extendDeadline" class="block text-sm font-medium text-gray-700 mb-1">Perpanjang Deadline</label>
-                <input
-                  id="extendDeadline"
-                  type="date"
-                  v-model="extendDeadlineDate"
-                  :min="minExtendDate"
-                  class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-                <button
-                  @click="extendDeadline"
-                  :disabled="!extendDeadlineDate"
-                  class="mt-2 w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed"
-                  aria-label="Perpanjang deadline tugas"
-                >
-                  Perpanjang Deadline
-                </button>
-              </div>
             </div>
-            <div v-else class="text-gray-500 text-center py-10">Pilih tugas untuk melihat detail.</div>
-          </section>
+          </div>
         </div>
 
-        <section v-if="isAdmin" class="mt-8 bg-white rounded-lg shadow-md p-6 max-w-3xl mx-auto">
-          <h2 class="text-xl font-semibold mb-4 text-indigo-700">Tambah Tugas Baru</h2>
-          <form @submit.prevent="addTask" class="space-y-4" enctype="multipart/form-data" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
-            <div>
-              <label for="title" class="block text-sm font-medium text-gray-700 mb-1">Judul Tugas</label>
-              <input
-                id="title"
-                v-model="newTask.title"
-                type="text"
-                required
-                class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="Masukkan judul tugas"
-                spellcheck="false"
-                autocorrect="off"
-                autocapitalize="none"
-              />
-            </div>
-            <div>
-              <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Deskripsi Tugas</label>
-              <textarea
-                id="description"
-                v-model="newTask.description"
-                rows="4"
-                required
-                class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-                placeholder="Masukkan deskripsi tugas"
-                spellcheck="false"
-                autocorrect="off"
-                autocapitalize="none"
-              ></textarea>
-            </div>
-            <div>
-              <label for="deadline" class="block text-sm font-medium text-gray-700 mb-1">Tanggal Deadline</label>
-              <input
-                id="deadline"
-                v-model="newTask.deadline"
-                type="date"
-                required
-                class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-            <div>
-              <label for="file" class="block text-sm font-medium text-gray-700 mb-1">File Tugas (opsional)</label>
-              <input
-                id="file"
-                type="file"
-                @change="handleFileUpload"
-                accept=".pdf,.doc,.docx,.txt,.zip,.rar,.7z,.jpg,.jpeg,.png"
-                class="w-full text-gray-700"
-              />
-            </div>
-            <button
-              type="submit"
-              class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 rounded-md w-full transition"
-            >
-              Simpan Tugas
-            </button>
-          </form>
-        </section>
+        <div v-else class="flex flex-col justify-center items-center flex-grow text-gray-500 text-center">
+          <i class="fas fa-info-circle text-6xl mb-4"></i>
+          <p class="text-lg">Select a task from the list to see details and actions.</p>
+        </div>
+      </div>
+    </section>
 
-        <section v-if="isAdmin" class="mt-8 bg-white rounded-lg shadow-md p-6 max-w-3xl mx-auto">
-          <h2 class="text-xl font-semibold mb-4 text-indigo-700">Pengangkatan Member Menjadi Admin</h2>
-          <form @submit.prevent="promoteMember" class="space-y-4">
-            <div>
-              <label for="memberSelect" class="block text-sm font-medium text-gray-700 mb-1">Pilih Member</label>
-              <select
-                id="memberSelect"
-                v-model="selectedMemberToPromote"
-                required
-                class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option disabled value="">-- Pilih Member --</option>
-                <option
-                  v-for="member in membersNotAdmin"
-                  :key="member.username"
-                  :value="member.username"
-                  class="capitalize"
-                >
-                  {{ member.username }}
-                </option>
-              </select>
-            </div>
-            <button
-              type="submit"
-              class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded-md w-full transition"
-            >
-              Angkat Menjadi Admin
-            </button>
-          </form>
-        </section>
-      </main>
+    <!-- Add New Task Form -->
+    <section v-if="isLoggedIn" class="mt-8 max-w-3xl w-full bg-white rounded-lg shadow-md p-6 mx-auto">
+      <h2 class="text-2xl font-semibold mb-5 text-indigo-700 flex items-center gap-2">
+        <i class="fas fa-plus-circle"></i> Add New Task
+      </h2>
+      <form @submit.prevent="addTask" class="space-y-5">
+        <div>
+          <label for="title" class="block text-gray-700 font-medium mb-1">Title</label>
+          <input id="title" v-model="newTask.title" type="text" required
+            class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+        <div>
+          <label for="description" class="block text-gray-700 font-medium mb-1">Description</label>
+          <textarea id="description" v-model="newTask.description" rows="4" required
+            class="w-full border border-gray-300 rounded-md px-3 py-2 resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+        </div>
+        <div>
+          <label for="deadline" class="block text-gray-700 font-medium mb-1">Deadline</label>
+          <input id="deadline" v-model="newTask.deadline" type="date" required
+            class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+        <div>
+          <label for="file" class="block text-gray-700 font-medium mb-1">Attach File (optional)</label>
+          <input id="file" type="file" @change="handleFileUpload"
+            class="w-full text-gray-700" />
+          <p v-if="newTask.fileName" class="mt-1 text-sm text-gray-600">Selected file: <span class="font-medium">{{ newTask.fileName }}</span></p>
+        </div>
+        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-md flex justify-center items-center gap-2">
+          <i class="fas fa-plus"></i> Add Task
+        </button>
+      </form>
     </section>
   </div>
 
-  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
   <script>
-    const { createApp, reactive, ref, computed, watch } = Vue;
+    const { createApp, reactive, ref, computed } = Vue;
+
+    const SUPABASE_URL = 'https://ejawjpkjqmlyjzbqlpgt.supabase.co'; 
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVqYXdqcGtqcW1seWp6YnFscGd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1MjE5MzgsImV4cCI6MjA3MjA5NzkzOH0.9QEE4t2QYdnZpwcEuVpAdKTis74gLNv8SVOdP5AvvNU
+'; 
+    const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     createApp({
       setup() {
-        // Users data
-        const users = reactive([
-          { username: 'Vindi Aldiano. M', password: 'Admin1TJKT', role: 'admin' },
-          { username: 'ananda', password: 'MemberTKJ', role: 'member' },
-          { username: 'anca', password: 'MemberTKJ', role: 'member' },
-          { username: 'anggit', password: 'MemberTKJ', role: 'member' },
-          { username: 'aisyah', password: 'MemberTKJ', role: 'member' },
-          { username: 'arya', password: 'MemberTKJ', role: 'member' },
-          { username: 'divta', password: 'MemberTKJ', role: 'member' },
-          { username: 'gita', password: 'MemberTKJ', role: 'member' },
-          { username: 'khawra', password: 'MemberTKJ', role: 'member' },
-          { username: 'hesti', password: 'MemberTKJ', role: 'member' },
-          { username: 'ismail', password: 'MemberTKJ', role: 'member' },
-          { username: 'nadya', password: 'MemberTKJ', role: 'member' },
-          { username: 'hasnita', password: 'MemberTKJ', role: 'member' },
-          { username: 'friti', password: 'MemberTKJ', role: 'member' },
-          { username: 'ramdan', password: 'MemberTKJ', role: 'member' },
-          { username: 'rani', password: 'MemberTKJ', role: 'member' },
-          { username: 'raya', password: 'MemberTKJ', role: 'member' },
-          { username: 'syuhfi', password: 'MemberTKJ', role: 'member' },
-          { username: 'zahraitun', password: 'MemberTKJ', role: 'member' },
-          { username: 'sari', password: 'MemberTKJ', role: 'member' },
-          { username: 'siska', password: 'MemberTKJ', role: 'member' },
-          { username: 'andita', password: 'MemberTKJ', role: 'member' },
-          { username: 'kharina', password: 'MemberTKJ', role: 'member' },
-          { username: 'salzabila', password: 'MemberTKJ', role: 'member' },
-          { username: 'rajib', password: 'MemberTKJ', role: 'member' },
-          { username: 'rezki', password: 'MemberTKJ', role: 'member' },
-        ]);
-
         // Reactive state
         const loginForm = reactive({
           username: '',
@@ -301,13 +161,9 @@
         const isLoggedIn = ref(false);
         const currentUser = reactive({ username: '', role: '' });
 
-        // Tasks stored in localStorage or default empty
-        const tasks = reactive(JSON.parse(localStorage.getItem('tugas_xi_tjkt_tasks') || '[]'));
-
-        // Selected task index
+        const tasks = ref([]);
         const selectedTaskIndex = ref(null);
 
-        // New task form
         const newTask = reactive({
           title: '',
           description: '',
@@ -316,77 +172,72 @@
           fileData: '',
         });
 
-        // Selected member to promote
+        const extendDeadlineDate = ref('');
         const selectedMemberToPromote = ref('');
 
-        // Extend deadline date input
-        const extendDeadlineDate = ref('');
-
-        // Computed properties
         const isAdmin = computed(() => currentUser.role === 'admin');
 
-        const membersNotAdmin = computed(() =>
-          users.filter((u) => u.role === 'member')
-        );
-
-        // Minimum date for extend deadline input (today or current deadline + 1 day)
-        const minExtendDate = computed(() => {
-          if (selectedTaskIndex.value === null) return new Date().toISOString().split('T')[0];
-          const currentDeadlineStr = tasks[selectedTaskIndex.value].deadline;
-          // Parse current deadline (Indonesian format: day month year)
-          const parts = currentDeadlineStr.split(' ');
-          if (parts.length !== 3) return new Date().toISOString().split('T')[0];
-          const monthNames = {
-            Januari: 0, Februari: 1, Maret: 2, April: 3, Mei: 4, Juni: 5,
-            Juli: 6, Agustus: 7, September: 8, Oktober: 9, November: 10, Desember: 11
-          };
-          const day = parseInt(parts[0], 10);
-          const month = monthNames[parts[1]];
-          const year = parseInt(parts[2], 10);
-          if (isNaN(day) || isNaN(month) || isNaN(year)) return new Date().toISOString().split('T')[0];
-          const currentDeadlineDate = new Date(year, month, day);
-          // Add 1 day
-          currentDeadlineDate.setDate(currentDeadlineDate.getDate() + 1);
-          const isoDate = currentDeadlineDate.toISOString().split('T')[0];
-          const today = new Date().toISOString().split('T')[0];
-          return isoDate > today ? isoDate : today;
-        });
-
-        // Watch selectedTaskIndex to reset extendDeadlineDate
-        watch(selectedTaskIndex, () => {
-          extendDeadlineDate.value = '';
-        });
-
-        // Methods
-        function login() {
-          loginError.value = '';
-          const usernameInput = loginForm.username.trim().toLowerCase();
-          const passwordInput = loginForm.password;
-
-          // Match username case-insensitive but exact for "Vindi Aldiano. M"
-          const user = users.find(u => {
-            if (u.username.toLowerCase() === usernameInput && u.password === passwordInput) {
-              return true;
-            }
-            return false;
-          });
-
-          if (user) {
-            currentUser.username = user.username;
-            currentUser.role = user.role;
-            isLoggedIn.value = true;
-            loginForm.username = '';
-            loginForm.password = '';
-            selectedTaskIndex.value = null;
-          } else {
-            loginError.value = 'Username atau password salah.';
+        // Load tasks from Supabase
+        async function loadTasks() {
+          if (!isLoggedIn.value) return;
+          const { data, error } = await supabase
+            .from('tasks')
+            .select('*')
+            .order('date_created', { ascending: true });
+          if (error) {
+            console.error('Error loading tasks:', error);
+            return;
           }
+          tasks.value = data.map(task => ({
+            ...task,
+            // Format dates to Indonesian locale for display
+            date: new Date(task.date_created).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }),
+            deadline: new Date(task.deadline).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }),
+          }));
+          selectedTaskIndex.value = null;
+          extendDeadlineDate.value = '';
         }
 
+        // Login function
+        async function login() {
+          loginError.value = '';
+          const usernameInput = loginForm.username.trim();
+          const passwordInput = loginForm.password;
+
+          // Query user from Supabase
+          const { data, error } = await supabase
+            .from('users')
+            .select('username, password, role')
+            .eq('username', usernameInput)
+            .limit(1)
+            .single();
+
+          if (error || !data) {
+            loginError.value = 'Username atau password salah.';
+            return;
+          }
+
+          if (data.password !== passwordInput) {
+            loginError.value = 'Username atau password salah.';
+            return;
+          }
+
+          currentUser.username = data.username;
+          currentUser.role = data.role;
+          isLoggedIn.value = true;
+
+          loginForm.username = '';
+          loginForm.password = '';
+
+          await loadTasks();
+        }
+
+        // Logout
         function logout() {
           isLoggedIn.value = false;
           currentUser.username = '';
           currentUser.role = '';
+          tasks.value = [];
           selectedTaskIndex.value = null;
           loginError.value = '';
           newTask.title = '';
@@ -398,63 +249,93 @@
           extendDeadlineDate.value = '';
         }
 
-        function addTask() {
+        // Add task
+        async function addTask() {
           if (!newTask.title.trim() || !newTask.description.trim() || !newTask.deadline) return;
 
-          const newEntry = {
-            id: Date.now(),
+          const { data, error } = await supabase.from('tasks').insert([{
             title: newTask.title.trim(),
             description: newTask.description.trim(),
-            createdBy: currentUser.username,
-            date: new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }),
-            deadline: new Date(newTask.deadline).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }),
-            fileName: newTask.fileName,
-            fileData: newTask.fileData,
-          };
-          tasks.push(newEntry);
-          saveTasks();
+            created_by: currentUser.username,
+            date_created: new Date().toISOString(),
+            deadline: newTask.deadline,
+            file_name: newTask.fileName,
+            file_data: newTask.fileData,
+          }]);
+
+          if (error) {
+            alert('Gagal menambahkan tugas: ' + error.message);
+            return;
+          }
+
+          // Reload tasks
+          await loadTasks();
+
+          // Reset form
           newTask.title = '';
           newTask.description = '';
           newTask.deadline = '';
           newTask.fileName = '';
           newTask.fileData = '';
-          selectedTaskIndex.value = tasks.length - 1;
+
+          // Pilih tugas terakhir
+          selectedTaskIndex.value = tasks.value.length - 1;
+
           // Reset file input manually
           const fileInput = document.getElementById('file');
           if (fileInput) fileInput.value = '';
         }
 
-        function deleteTask(index) {
-          if (index === null || index < 0 || index >= tasks.length) return;
-          tasks.splice(index, 1);
-          saveTasks();
+        // Delete task
+        async function deleteTask(index) {
+          if (index === null || index < 0 || index >= tasks.value.length) return;
+          const taskId = tasks.value[index].id;
+
+          const { error } = await supabase.from('tasks').delete().eq('id', taskId);
+          if (error) {
+            alert('Gagal menghapus tugas: ' + error.message);
+            return;
+          }
+
+          await loadTasks();
           selectedTaskIndex.value = null;
           extendDeadlineDate.value = '';
         }
 
+        // Select task
         function selectTask(index) {
           selectedTaskIndex.value = index;
           extendDeadlineDate.value = '';
         }
 
-        function promoteMember() {
-          if (!isAdmin.value) {
-            alert('Hanya admin yang dapat mengangkat member menjadi admin.');
+        // Extend deadline
+        async function extendDeadline() {
+          if (selectedTaskIndex.value === null) return;
+          if (!extendDeadlineDate.value) return;
+
+          const task = tasks.value[selectedTaskIndex.value];
+          const newDate = new Date(extendDeadlineDate.value);
+          if (isNaN(newDate.getTime())) {
+            alert('Tanggal perpanjangan tidak valid.');
             return;
           }
-          if (!selectedMemberToPromote.value) return;
-          const user = users.find(u => u.username === selectedMemberToPromote.value);
-          if (user && user.role === 'member') {
-            user.role = 'admin';
-            selectedMemberToPromote.value = '';
-            alert(`Member "${user.username}" telah diangkat menjadi Admin.`);
+
+          const { error } = await supabase
+            .from('tasks')
+            .update({ deadline: extendDeadlineDate.value })
+            .eq('id', task.id);
+
+          if (error) {
+            alert('Gagal memperpanjang deadline: ' + error.message);
+            return;
           }
+
+          await loadTasks();
+          alert('Deadline berhasil diperpanjang.');
+          extendDeadlineDate.value = '';
         }
 
-        function saveTasks() {
-          localStorage.setItem('tugas_xi_tjkt_tasks', JSON.stringify(tasks));
-        }
-
+        // Handle file upload
         function handleFileUpload(event) {
           const file = event.target.files[0];
           if (!file) {
@@ -471,27 +352,6 @@
           reader.readAsDataURL(file);
         }
 
-        function extendDeadline() {
-          if (selectedTaskIndex.value === null) return;
-          if (!extendDeadlineDate.value) return;
-
-          // Parse new date
-          const newDate = new Date(extendDeadlineDate.value);
-          if (isNaN(newDate.getTime())) {
-            alert('Tanggal perpanjangan tidak valid.');
-            return;
-          }
-
-          // Format new date to Indonesian locale
-          const formattedDate = newDate.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
-
-          // Update task deadline
-          tasks[selectedTaskIndex.value].deadline = formattedDate;
-          saveTasks();
-          alert('Deadline berhasil diperpanjang.');
-          extendDeadlineDate.value = '';
-        }
-
         return {
           loginForm,
           loginError,
@@ -501,18 +361,15 @@
           selectedTaskIndex,
           newTask,
           isAdmin,
-          membersNotAdmin,
           selectedMemberToPromote,
           extendDeadlineDate,
-          minExtendDate,
           login,
           logout,
           addTask,
           deleteTask,
           selectTask,
-          promoteMember,
-          handleFileUpload,
           extendDeadline,
+          handleFileUpload,
         };
       },
     }).mount('#app');
